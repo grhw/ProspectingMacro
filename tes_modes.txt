@@ -1,0 +1,3 @@
+^Collect Deposit$
+^Pan$
+^Shake$
