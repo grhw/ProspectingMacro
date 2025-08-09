@@ -10,7 +10,8 @@ keyboard = pynput.keyboard.Controller()
 
 coords = {
     "progress": {"left": 1522+1920, "top": 608, "width": 100, "height": 531},
-    "action_text": {"left": 881+1920, "top": 1255, "width": 802, "height": 72}
+    "action_text": {"left": 881+1920, "top": 1255, "width": 802, "height": 72},
+    "bar": {"left": 960+1920, "top": 1143, "width": 802, "height": 2}
 }
 
 class Modes:
@@ -29,15 +30,17 @@ def to_pil(sct_img):
 
 mode = Modes.moving
 nothing_count = 15
+fill_count = 5
 
 def update_mode():
-    global mode, nothing_count
+    global mode, nothing_count, fill_count
     img = to_pil(ss.grab(coords["action_text"]))
     text = pytesseract.image_to_string(img, config=tes_config)
 
     last_mode = mode
     if Modes.digging in text:
         mode = Modes.digging
+        fill_count = 10
         nothing_count = 15
         clocks["dig_duration"] = time.time()
     elif Modes.shaking in text:
@@ -64,26 +67,20 @@ while True:
     if mode == Modes.digging:
         if time.time() - clocks["dig_cooldown"] > 3:
             progress = to_pil(ss.grab(coords["progress"]))
-            full = is_color(progress.getpixel((13, 19)), (255, 255, 255)) or \
-                is_color(progress.getpixel((13, 8)), (255, 255, 255))
+            hit = is_color(progress.getpixel((13, 19)), (255, 255, 255)) or is_color(progress.getpixel((13, 8)), (255, 255, 255))
 
-            if full:
+            if not is_color(progress.getpixel((77,516)),(140,140,140)):
+                fill_count -= 1
+            if fill_count < 0:
+                mode = Modes.moving
+            if hit:
                 mouse.release(pynput.mouse.Button.left)
                 clocks["dig_cooldown"] = time.time()
-                print("progress full")
-                mode = Modes.moving
+                fill_count = 10
             elif time.time() - clocks["dig_duration"] > 5:
                 mouse.release(pynput.mouse.Button.left)
                 print("stuck?")
-                mode = Modes.moving
-            else:
-                mouse.press(pynput.mouse.Button.left)
-    elif mode == Modes.shaking:
-        progress = to_pil(ss.grab(coords["progress"]))
-        empty = is_color(progress.getpixel((50, 500)), (0, 0, 0), leniency=30)
-        mouse.press(pynput.mouse.Button.left)
-        if empty:
-            mode = Modes.moving
+                clocks["dig_duration"] = time.time()
         sleep(1)
         mouse.release(pynput.mouse.Button.left)
 
