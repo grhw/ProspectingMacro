@@ -81,9 +81,15 @@ while True:
                 mouse.release(pynput.mouse.Button.left)
                 print("stuck?")
                 clocks["dig_duration"] = time.time()
+            else:
+                mouse.press(pynput.mouse.Button.left)
+    elif mode == Modes.shaking:
+        progress = to_pil(ss.grab(coords["bar"]))
+        mouse.press(pynput.mouse.Button.left)
         sleep(1)
         mouse.release(pynput.mouse.Button.left)
-
+        if is_color(progress.getpixel((1, 1)), (140, 140, 140)):
+            mode = Modes.moving
     if mode == Modes.moving:
         print("moving...")
         is_using_w = not is_using_w
