@@ -30,16 +30,19 @@ state = states.walk
 nothing_count = 10
 is_using_w_instead_of_s = True
 
+dig_cooldown = time.time()
+last_dig = time.time()
 def update_state():
-    global state,nothing_count
+    global state,nothing_count,is_using_w_instead_of_s,last_dig
     image = np.array(ss.grab(config["bbox"]["state"]))
     text = ocr.readtext(image,detail=0,allowlist="Collect DepositPan")
     
     last = state
-    if text == states.dig:
+    if states.dig in text:
         state = states.dig
         nothing_count = 10
-    elif text == states.shake:
+        last_dig = time.time()
+    elif states.shake in text:
         state = states.shake
         nothing_count = 10
     else:
@@ -47,59 +50,71 @@ def update_state():
         if nothing_count < 0:
             state = states.walk
     
-    print("Text:",text)
     if last != state:
         print("Mode:",state)
+        print("Text:",text)
 
-dig_cooldown = time.time()
-last_dig = time.time()
 def dig():
     global dig_cooldown,last_dig
     image = utils.to_pil(ss.grab(config["bbox"]["progress"]))
     
-    if utils.is_color(image.getpixel((1,1)),(255,255,255)):
+    if utils.is_color(image.getpixel((1,7)),(255,255,255)) or utils.is_color(image.getpixel((1,1)),(255,255,255)):
         mouse.release(pynput.mouse.Button.left)
         dig_cooldown = time.time()
+        last_dig = time.time()
     if not utils.is_color(image.getpixel((1,0)),(15,250,0)) and time.time()-dig_cooldown > 1:
         mouse.press(pynput.mouse.Button.left)
-        last_dig = time.time()
     
-    if time.time()-last_dig > 3:
+    if time.time()-last_dig > 2:
         print("stuck?")
         last_dig = time.time()
         mouse.release(pynput.mouse.Button.left)
+        return True
 
 def shake():
     mouse.press(pynput.mouse.Button.left)    
     sleep(1)
     mouse.release(pynput.mouse.Button.left)
 
-def full_state():
-    fill = utils.to_pil(ss.grab(config["bbox"]["fill"]))
-    w,h = fill.size
-    
+def is_empty():
+    shot = ss.grab(config["bbox"]["fill"])
+    num = np.array(shot)
+    fill = utils.to_pil(shot)
     if utils.is_color(fill.getpixel((0,0)),(140,140,140)):
-        return fullness.empty
-    if utils.is_color(fill.getpixel((w-1,0)),(140,140,140)):
-        return fullness.full
-    return fullness.between
+        prog = ("".join(ocr.readtext(num,detail=0,allowlist="0123456789/."))).split("/")[0]
+        print(prog)
+        if prog == "0":
+            return True
+
+def is_full():
+    shot = ss.grab(config["bbox"]["fill"])
+    fill = utils.to_pil(shot)
+    w,h = fill.size
+    if not utils.is_color(fill.getpixel((w-1,1)),(140,140,140)):
+        return True
+prev_state = None
 
 while True:
     sleep(1/144)
-    last = state
+
     if state == states.dig:
-        dig()
-        if full_state() == fullness.full:
-            state = states.walk
+        if dig():
+            if is_full():
+                print("Done")
+                state = states.walk
+
     elif state == states.shake:
         shake()
-        if full_state() == fullness.empty:
+        if is_empty():
             state = states.walk
-    
+
     if state == states.walk:
-        while state != last:
+        while state == prev_state or state == states.walk:
             key = "w" if is_using_w_instead_of_s else "s"
             keyboard.press(key)
             sleep(0.25)
             keyboard.release(key)
             update_state()
+        print("Done walking")
+        is_using_w_instead_of_s = not is_using_w_instead_of_s
+    prev_state = state

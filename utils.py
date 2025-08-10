@@ -48,21 +48,18 @@ def get_config():
         print("!! You a calibration for a different resolution. Recalibrate with `calibration.py`.")
         exit()
     
-    for key in config["bbox"].keys():
-        offset = config["bbox"][key]
-        offset[2] = offset[2]-offset[0]
-        offset[3] = offset[3]-offset[1]
-        
-        offset[0] += bbox["left"]
-        offset[1] += bbox["top"]
+    for key, coords in config["bbox"].items():
+        left, top, right, bottom = coords
+        width = right - left
+        height = bottom - top
         
         final = {
-            "left": offset[0],
-            "top": offset[1],
-            "width": offset[2],
-            "height": offset[3],
+            "left": left + bbox["left"],
+            "top": top + bbox["top"],
+            "width": width,
+            "height": height,
         }
         
         config["bbox"][key] = final
-    
+
     return config
