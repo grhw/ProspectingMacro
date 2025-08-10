@@ -1,4 +1,5 @@
-import shutil
+import json
+import os
 from PIL import Image
 import pywinctl as pwc
 
@@ -34,4 +35,34 @@ def get_roblox_bbox():
             "height": win.height,
         }
 
-print(get_roblox_bbox())
+def get_config():
+    if not os.path.isfile("user/calibrated.json"):
+        print("!! You haven't calibrated yet! Run `calibration.py`.")
+        exit()
+
+    with open("user/calibrated.json","r") as f:
+        config = json.load(f)
+
+    bbox = get_roblox_bbox()
+    if not (bbox["width"] == config["screen"]["width"] and bbox["height"] == config["screen"]["height"]):
+        print("!! You a calibration for a different resolution. Recalibrate with `calibration.py`.")
+        exit()
+    
+    for key in config["bbox"].keys():
+        offset = config["bbox"][key]
+        offset[2] = offset[2]-offset[0]
+        offset[3] = offset[3]-offset[1]
+        
+        offset[0] += bbox["left"]
+        offset[1] += bbox["top"]
+        
+        final = {
+            "left": offset[0],
+            "top": offset[1],
+            "width": offset[2],
+            "height": offset[3],
+        }
+        
+        config["bbox"][key] = final
+    
+    return config

@@ -7,7 +7,7 @@ import utils
 ss = mss.mss()
 
 print("\n\n!! Before starting:")
-print("-  Hold left click")
+print("-  Hold left click (with pan)")
 print("-  Press escape")
 print("-  Release left click")
 print("-  Press escape again")
@@ -96,7 +96,8 @@ print("-  state.png: Action text (should say `Collect Deposit`)")
 input("\n\nIf everything looks correct, press enter.\nif not, press CTRL+C and try again.\n...")
 
 print("saving...")
-with open("calibrated.json","w+") as f:
+os.makedirs("user/",exist_ok=True)
+with open("user/calibrated.json","w+") as f:
     f.write(json.dumps(config,indent=4))
 shutil.rmtree("preview/")
 print("\nDone cleaning! Keep note you will have to do this again if you change resolution.")
