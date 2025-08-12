@@ -2,3 +2,5 @@ mss
 pillow
 numpy
 easyocr
+pynput
+pywinctl

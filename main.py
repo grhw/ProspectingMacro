@@ -107,6 +107,19 @@ while True:
         shake()
         if is_empty():
             state = states.walk
+            #sleep(1)
+            #keyboard.press("`")
+            #sleep(0.05)
+            #keyboard.release("`")
+            #mouse.position = (1920+1151,1032)
+            #sleep(0.05)
+            #mouse.press(pynput.mouse.Button.left)
+            #sleep(0.05)
+            #mouse.release(pynput.mouse.Button.left)
+            #sleep(0.05)
+            #keyboard.press("`")
+            #sleep(0.05)
+            #keyboard.release("`")
 
     if state == states.walk:
         while state == prev_state or state == states.walk:
